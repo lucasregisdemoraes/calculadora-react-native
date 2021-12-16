@@ -1,119 +1,119 @@
-import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Entypo } from '@expo/vector-icons';
+import { Entypo } from '@expo/vector-icons'; // importa alguns ícones
 
 export default function App() {
-  const [darkMode, setDarkmode] = useState(true)
+  const [darkMode, setDarkmode] = useState(true) // cria a função para ativar/desativar o Dark Mode
 
-  let [currentNumber, setCurrentNumber] = useState("")
-  const [lastNumber, setLastNumber] = useState("")
-
+  const [currentNumber, setCurrentNumber] = useState("") // cria a função para definir o número atual
+  const [lastNumber, setLastNumber] = useState("") // cria a função para difinir o último número digitado
 
   const utils = {
-    endsWithAOperator: () => {
+    isLastChar: char => { // retorna verdadeiro se a ultima letra é a mesma que a passada no parâmetro
       let chars = currentNumber.split("")
-      let lastChar = chars[chars.length - 1]
-      return lastChar === " " ? true : false // se a ultima letra for um espaço(por causa do operador) retorna verdadeiro
+      return chars[chars.length - 1] === char ? true : false
     },
-    lastChar: () => {
-      let chars = currentNumber.split("")
-      return chars[chars.length - 1] // retorna a ultima letra
+    endsWithAOperator: () => { // se a ultima letra for um espaço (por causa do operador) retorna verdadeiro
+      return utils.isLastChar(" ")
     },
-    lastCharIsANumber: () => {
+    lastCharIsANumber: () => { // se o último caracter for um número retorna verdadeiro
       const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
       let isANumber = false
-      // numbers.forEach(number => {
-      // isANumber = utils.lastChar() === number ? true : false
-      // })
 
-      numbers.forEach((number) => {
-        if (utils.lastChar() === number) isANumber = true
+      numbers.forEach(number => { // para cada um dos números verifica se ele é o último caracter
+        if (utils.isLastChar(number)) isANumber = true
       })
       return isANumber
     }
   }
 
-  function calculate() {
-    if (utils.endsWithAOperator()) {
-      throw new Error("insira o segundo valor")
-      // setLastNumber("insira o segundo valor")
-      // return
-    }
-    let splitNumbers = currentNumber.split(" ")
-    let firstNumber = parseFloat(splitNumbers[0])
-    let operator = splitNumbers[1]
-    let lastNumber = parseFloat(splitNumbers[2])
+  const calculatorsFunctions = {
+    calculate: () => { // faz o calculo
+      if (utils.endsWithAOperator() || utils.isLastChar(".") || utils.isLastChar("-")) { // se o ultimo valor digitado é um operador dispara um erro
+        throw new Error("insira o segundo valor")
+      }
 
-    switch (operator) {
-      case "+":
-        setCurrentNumber(String(firstNumber + lastNumber))
-        return
-      case "-":
-        setCurrentNumber(String(firstNumber - lastNumber))
-        return
-      case "*":
-        setCurrentNumber(String(firstNumber * lastNumber))
-        return
-      case "/":
-        setCurrentNumber(String(firstNumber / lastNumber))
-        return
-      case "%":
-        setCurrentNumber(String((lastNumber / 100) * firstNumber))
+      const splitNumbers = currentNumber.split(" ")
+      const firstNumber = parseFloat(splitNumbers[0])
+      const operator = splitNumbers[1]
+      const lastNumber = parseFloat(splitNumbers[2])
+
+      switch (operator) { // faz a conta pra cada operador
+        case "+":
+          setCurrentNumber(String(firstNumber + lastNumber))
+          return
+        case "-":
+          setCurrentNumber(String(firstNumber - lastNumber))
+          return
+        case "*":
+          setCurrentNumber(String(firstNumber * lastNumber))
+          return
+        case "/":
+          setCurrentNumber(String(firstNumber / lastNumber))
+          return
+        case "%":
+          setCurrentNumber(String((lastNumber / 100) * firstNumber))
+      }
+    },
+    DELFunction: () => {
+      utils.endsWithAOperator() ?
+        setCurrentNumber(currentNumber.substring(0, currentNumber.length - 3))
+        :
+        setCurrentNumber(currentNumber.substring(0, currentNumber.length - 1))
+    },
+    ACFunction: () => {
+      setCurrentNumber("")
+      setLastNumber("")
+    },
+    negativeSignalFunction: () => {
+      if (!utils.isLastChar("-") && !utils.isLastChar(".") && !utils.lastCharIsANumber()) {
+        setCurrentNumber(currentNumber + '-')
+      }
+    },
+    equalsFunction: () => {
+      setLastNumber(currentNumber + " =")
+      try {
+        calculatorsFunctions.calculate()
+      } catch (error) {
+        setLastNumber(error.message)
+      }
     }
   }
 
-
-  function handleInput(buttonPressed) {
+  function handleInput(buttonPressed) { // lida com o botão pressionado
     if (buttonPressed === "/" || buttonPressed === "*" || buttonPressed === "-" || buttonPressed === "+" || buttonPressed === "%") {
-      if (currentNumber === "") {
-        setLastNumber("insira primeiro um valor")
-        return
+      if (currentNumber === "" || currentNumber === "-" || currentNumber === ".") { // se o valor atual é vazio ou um -(sinal de negativo) ou um .(ponto) dispara um erro
+        throw new Error("insira o primeiro valor")
       }
-      if (currentNumber.split(" ").length < 3 && !utils.endsWithAOperator()) {
-        setCurrentNumber(currentNumber + " " + buttonPressed + " ")
+      if (currentNumber.split(" ").length < 3 && !utils.endsWithAOperator()) { // verifica se já tem um operador(se tiver mais que 3 itens no array significa que já tem um operador) ou se o último valor inserido não é um operador
+        setCurrentNumber(currentNumber + " " + buttonPressed + " ") // adiciona espaços ao lado do operador para poder separar os valores na função calculate()
         return
-      } else {
-        setLastNumber("somente 1 operador")
-        return
+      } else { // se não se encaixar na condição acima dispara um erro
+        throw new Error("somente 1 operador")
       }
     }
 
-
-
-    switch (buttonPressed) {
+    switch (buttonPressed) { // para cada caso de um botão com função especial ser pressionado
       case "DEL":
-        utils.endsWithAOperator() ?
-          setCurrentNumber(currentNumber.substring(0, currentNumber.length - 3))
-          :
-          setCurrentNumber(currentNumber.substring(0, currentNumber.length - 1))
+        calculatorsFunctions.DELFunction()
         return
       case "AC":
-        setCurrentNumber("")
-        setLastNumber("")
+        calculatorsFunctions.ACFunction()
         return
       case "+/-":
-        if (utils.lastChar() !== "-" && !utils.lastCharIsANumber()) {
-          setCurrentNumber(currentNumber + '-')
-        }
+        calculatorsFunctions.negativeSignalFunction()
         return
       case "=":
-        setLastNumber(currentNumber + " = ")
-        try {
-          calculate()
-          return
-        } catch (error) {
-          setLastNumber(error.message)
-          return
-        }
+        calculatorsFunctions.equalsFunction()
+        return
     }
 
-    setCurrentNumber(String(currentNumber) + String(buttonPressed))
+    setCurrentNumber(String(currentNumber) + String(buttonPressed)) // adiciona o valor do botão pressionado (transformado em string para não ter problemas na função split())
   }
 
-  const buttons = ["AC", "DEL", "%", "/", 7, 8, 9, "*", 4, 5, 6, "-", 1, 2, 3, "+", 0, ".", "+/-", "="]
+  const buttons = ["AC", "DEL", "%", "/", 7, 8, 9, "*", 4, 5, 6, "-", 1, 2, 3, "+", 0, ".", "+/-", "="] // lista dos botões que serão utilizados
 
-  const styles = StyleSheet.create({
+  const styles = StyleSheet.create({ // cria a estilização do APP
     container: {
       backgroundColor: darkMode ? "#282f3b" : "#f5f5f5",
     },
@@ -142,14 +142,12 @@ export default function App() {
       marginBottom: 20,
     },
     keyboard: {
-      // height: "60%",
       flexWrap: "wrap",
       flexDirection: "row",
     },
     button: {
       borderWidth: 0.5,
       borderColor: darkMode ? "#3f4d5b" : "#e5e5e5",
-      // height: 50,
       minHeight: 90,
       minWidth: 90,
       flex: 2,
@@ -166,19 +164,37 @@ export default function App() {
     <View style={styles.container}>
       <View style={styles.results}>
         <TouchableOpacity style={styles.darkModeButton}>
+          {/* Componente usado para inserir ícones */}
           <Entypo name={darkMode ? "light-up" : "moon"} color={darkMode ? "white" : "black"} size={24} onPress={() => darkMode ? setDarkmode(false) : setDarkmode(true)} />
         </TouchableOpacity>
+        {/* coloca a variável lastNumber no Componente Text */}
         <Text style={styles.historyText}>{lastNumber}</Text>
+        {/* coloca a variável currentNumber no Componente Text */}
         <Text style={styles.resultText}>{currentNumber}</Text>
       </View>
+
       <View style={styles.keyboard}>
-        {buttons.map((button) =>
-          button === "=" ?
-            <TouchableOpacity onPress={() => handleInput(button)} key={button} style={[styles.button, { backgroundColor: "#9DBC7B" }]}>
-              <Text style={[styles.textButton, { fontSize: 30, color: "white" }]}>{button}</Text>
+        {/* faz um loop no array buttons e insere cada botão */}
+        {buttons.map(button =>
+          button === "=" ? // verifica se o botão é o =(igual) e retorna o Componente com uma cor diferente
+            <TouchableOpacity onPress={() => {
+              try {
+                handleInput(button)
+              } catch (error) {
+                setLastNumber(error.message)
+              }
+            }} key={button} style={[styles.button, { backgroundColor: "#9DBC7B" }]}>
+              <Text style={{fontSize: 30, color: "white"}}>{button}</Text>
             </TouchableOpacity>
-            :
-            <TouchableOpacity onPress={() => handleInput(button)} key={button} style={[styles.button,
+            : // se o botão não for o =(igual) retorna o Componente com uma cor diferente
+            <TouchableOpacity onPress={() => {
+              try {
+                handleInput(button)
+              } catch (error) {
+                setLastNumber(error.message)
+              }
+            }} key={button} style={[styles.button,
+              // verifica se o botão é um número(do tipo number) para mudar a cor dele
             { backgroundColor: typeof (button) === "number" ? darkMode ? "#303946" : "#fff" : darkMode ? "#414853" : "#ededed" }]}>
               <Text style={styles.textButton}>{button}</Text>
             </TouchableOpacity>
